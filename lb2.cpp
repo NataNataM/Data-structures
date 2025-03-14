@@ -1,12 +1,13 @@
-﻿#include <iostream>
+#include <iostream>
 #include <complex>
 #include <math.h>
 #include <mkl.h>
 #include <windows.h>
+#include <limits.h>
 using namespace std;
 
 //создание двумерного динамического массива
-complex<float>** create_matrix(int n){
+complex<float>** create_matrix(int n) {
     complex<float>** a = new complex<float>*[n];
     complex<float>* aa = new complex<float>[n * n];
     for (int i = 0; i < n; i++) {
@@ -17,10 +18,9 @@ complex<float>** create_matrix(int n){
 }
 
 //переумножение матриц 1 способом
-void mult1_matrix(complex<float>** a, complex<float>** b, complex<float>** с, int n){
+void mult1_matrix(complex<float>** a, complex<float>** b, complex<float>** с, int n) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
-            с[i][j] = complex<float>(0.0, 0.0);
             for (int k = 0; k < n; ++k) {
                 с[i][j] += a[i][k] * b[j][k];
             }
@@ -30,24 +30,43 @@ void mult1_matrix(complex<float>** a, complex<float>** b, complex<float>** с, i
 
 //транспонирование матрицы для 3 способа
 void trans_matrix(complex<float>** a, int n) {
-    complex<float>** _a = create_matrix(n);
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            _a[i][j] = a[j][i];
+    complex<float> t;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            t = a[i][j];
+            a[i][j] = a[j][i];
+            a[j][i] = t;
         }
     }
 }
 
 //переумножение матриц 3 способом
-void mult3_matrix(complex<float>** a, complex<float>** b, complex<float>** с, int n) {
+void mult3_matrix(complex<float>** A, complex<float>** B, complex<float>** C, int n) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
-                с[i][j] += a[i][j] * b[i][j];
+            complex<float> sum = 0;
+            for (int k = 0; k < n; ++k) {
+                sum += A[i][k] * B[j][k]; 
+            }
+            C[i][j] = sum;
         }
     }
 }
 
-int main(){
+//сравнение матриц
+bool sravn_matrix(complex<float>** a, complex<float>** b, int n) {
+    float epsilon = 1e-2f;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (fabs(a[i][j].real() - b[i][j].real()) > epsilon || fabs(a[i][j].imag() - b[i][j].imag()) > epsilon) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+int main() {
     setlocale(LC_ALL, "Russian");
     const int N = 2048;
     complex<float>** a = create_matrix(N);
@@ -57,10 +76,15 @@ int main(){
     complex<float>** c3 = create_matrix(N);
     for (int i = 0; i < N; ++i)
         for (int j = 0; j < N; ++j) {
-            a[i][j] = complex<float>((double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
-            b[i][j] = complex<float>((double)rand() / RAND_MAX, (double)rand() / RAND_MAX);
+            a[i][j] = complex<float>((float)rand() / RAND_MAX, (float)rand() / RAND_MAX);
+            b[i][j] = complex<float>((float)rand() / RAND_MAX, (float)rand() / RAND_MAX);
         }
-
+    for (int i = 0; i < N; ++i)
+        for (int j = 0; j < N; ++j) {
+            c1[i][j] = complex<float>(0.0, 0.0);
+            c2[i][j] = complex<float>(0.0, 0.0);
+            c3[i][j] = complex<float>(0.0, 0.0);
+        }
     //1 способ
     LARGE_INTEGER freq, start, end;
     QueryPerformanceFrequency(&freq);
@@ -72,7 +96,7 @@ int main(){
     cout << "1 способ:" << endl;
     cout << "Время, затраченное на умножение матриц: " << t_count << " секунд.\n";
     cout << "Производительность в MFlops: " << p << endl << endl;
-    
+
     //2 способ
     float alpha[] = { 1.0, 0.0 };
     float beta[] = { 0.0, 0.0 };
@@ -85,7 +109,7 @@ int main(){
     cout << "2 способ:" << endl;
     cout << "Время, затраченное на умножение матриц: " << t_count << " секунд.\n";
     cout << "Производительность в MFlops: " << p << endl << endl;
-    
+
     //3 способ
     trans_matrix(b, N);
     QueryPerformanceFrequency(&freq);
@@ -97,7 +121,12 @@ int main(){
     cout << "3 способ:" << endl;
     cout << "Время, затраченное на умножение матриц: " << t_count << " секунд.\n";
     cout << "Производительность в MFlops: " << p << endl << endl;
-    
+
+    if (sravn_matrix(c3, c2, N) && sravn_matrix(c1, c2, N) && sravn_matrix(c3, c1, N))
+        cout << "Матрицы c1, с2 и с3 равны.\n";
+    else
+        cout << "Матрицы c1, с2 и с3 не равны!\n";
+
     cout << "Выполнила: Мангер Наталья Александровна, группа 090304-РПИа-о24\n";
     return 0;
 }

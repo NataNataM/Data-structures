@@ -79,6 +79,7 @@ int main() {
 #include <mkl.h>
 #include <windows.h>
 #include <limits.h>
+#include <omp.h>
 using namespace std;
 
 //создание двумерного динамического массива
@@ -91,24 +92,25 @@ complex<float>** create_matrix(int n) {
     }
     return a;
 }
-
+ 
 //переумножение матриц 1 способом
-void mult1_matrix(complex<float>** a, complex<float>** b, complex<float>** с, int n) {
+void mult1_matrix(complex<float>** A, complex<float>** B, complex<float>** C, int n) {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
+            complex<float> sum = 0;
             for (int k = 0; k < n; ++k) {
-                с[i][j] += a[i][k] * b[j][k];
+                sum += A[i][k] * B[k][j];
             }
+            C[i][j] = sum;
         }
     }
 }
 
 //транспонирование матрицы для 3 способа
 void trans_matrix(complex<float>** a, int n) {
-    complex<float> t;
     for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            t = a[i][j];
+        for (int j = i + 1; j < n; j++) {
+            complex<float> t = a[i][j];
             a[i][j] = a[j][i];
             a[j][i] = t;
         }
@@ -117,11 +119,12 @@ void trans_matrix(complex<float>** a, int n) {
 
 //переумножение матриц 3 способом
 void mult3_matrix(complex<float>** A, complex<float>** B, complex<float>** C, int n) {
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             complex<float> sum = 0;
             for (int k = 0; k < n; ++k) {
-                sum += A[i][k] * B[j][k]; 
+                sum += A[i][k] * B[j][k];
             }
             C[i][j] = sum;
         }
@@ -160,6 +163,7 @@ int main() {
             c2[i][j] = complex<float>(0.0, 0.0);
             c3[i][j] = complex<float>(0.0, 0.0);
         }
+
     //1 способ
     LARGE_INTEGER freq, start, end;
     QueryPerformanceFrequency(&freq);
@@ -177,7 +181,7 @@ int main() {
     float beta[] = { 0.0, 0.0 };
     QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&start);
-    cblas_cgemm(CblasRowMajor, CblasNoTrans, CblasTrans, N, N, N, alpha, a[0], N, b[0], N, beta, c1[0], N);
+    cblas_cgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, N, N, N, alpha, a[0], N, b[0], N, beta, c1[0], N);
     QueryPerformanceCounter(&end);
     t_count = (double)(end.QuadPart - start.QuadPart) / freq.QuadPart;
     p = 2.0 * pow(N, 3) / t_count * pow(10, -6);
@@ -197,6 +201,7 @@ int main() {
     cout << "Время, затраченное на умножение матриц: " << t_count << " секунд.\n";
     cout << "Производительность в MFlops: " << p << endl << endl;
 
+    //сравнение матриц 
     if (sravn_matrix(c3, c2, N) && sravn_matrix(c1, c2, N) && sravn_matrix(c3, c1, N))
         cout << "Матрицы c1, с2 и с3 равны.\n";
     else

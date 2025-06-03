@@ -60,7 +60,7 @@ int main() {
     while (getline(file, line)) {
         dictionary.push_back(utf8to16(line));
     }
-    // Предварительно строим частотную карту всего словаря
+    
     vector<unordered_map<char16_t, int>> dictFreqMaps;
     dictFreqMaps.reserve(dictionary.size());
     for (const auto& word : dictionary) {

@@ -30,7 +30,7 @@ unordered_map<char16_t, int> buildFrequencyMap(const u16string& word) {
     return freq;
 }
 
-// Проверяет, можно ли составить target из source
+// Проверяет, можно ли составить target из исходного слова
 bool canConstruct(const unordered_map<char16_t, int>& sourceFreq, const u16string& target) {
     unordered_map<char16_t, int> targetFreq;
     for (char16_t c : target)

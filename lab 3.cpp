@@ -1,5 +1,4 @@
-﻿#include <iostream>
-#include <cmath>
+#include <iostream>
 #include <vector>
 #include <locale>
 #include <windows.h>
@@ -11,14 +10,133 @@ struct Massiv {
     int last1 = 0, last2 = 0, next1 = 0, next2 = 0, new_num = 0;
 };
 
+class Node {
+public:
+    int new_num;
+    Node* next;
+    Node* prev;
+
+    Node(int new_num){
+        this->new_num = new_num;
+        this->next = nullptr;
+        this->prev = nullptr;
+    }
+
+    void insertAtBeginning(Node*& head, int new_num) {
+        Node* newNode = new Node(new_num);
+        if (head == nullptr) {
+            head = newNode;
+            return;
+        }
+        newNode->next = head;
+        head->prev = newNode;
+        head = newNode;
+    }
+
+    void insertAtEnd(Node*& head, int new_num) {
+        Node* newNode = new Node(new_num);
+        if (head == nullptr) {
+            head = newNode;
+            return;
+        }
+        Node* temp = head;
+        while (temp->next != nullptr) {
+            temp = temp->next;
+        }
+        temp->next = newNode;
+        newNode->prev = temp;
+    }
+
+    void insertAtPosition(Node*& head, int new_num, int position) {
+        if (position < 1) {
+            cout << "Номер позиции должен быть равен или больше 1" << endl;
+            return;
+        }
+        if (position == 1) {
+            insertAtBeginning(head, new_num);
+            return;
+        }
+        Node* newNode = new Node(new_num);
+        Node* temp = head;
+        for (int i = 1; temp != nullptr && i < position - 1; i++) {
+            temp = temp->next;
+        }
+        if (temp == nullptr) {
+            cout << "Номер позиции превышает количество элементов в списке" << endl;
+            return;
+        }
+        newNode->next = temp->next;
+        newNode->prev = temp;
+        if (temp->next != nullptr) {
+            temp->next->prev = newNode;
+        }
+        temp->next = newNode;
+    }
+
+    void deleteAtBeginning(Node*& head) {
+        if (head == nullptr) {
+            cout << "Список пуст" << endl;
+            return;
+        }
+        Node* temp = head;
+        head = head->next;
+        if (head != nullptr) {
+            head->prev = nullptr;
+        }
+        delete temp;
+    }
+
+    void deleteAtEnd(Node*& head) {
+        if (head == nullptr) {
+            cout << "Список пуст" << endl;
+            return;
+        }
+        Node* temp = head;
+        if (temp->next == nullptr) {
+            head = nullptr;
+            delete temp;
+            return;
+        }
+        while (temp->next != nullptr) {
+            temp = temp->next;
+        }
+        temp->prev->next = nullptr;
+        delete temp;
+    }
+
+    void deleteAtPosition(Node*& head, int position) {
+        if (head == nullptr) {
+            cout << "Список пуст" << endl;
+            return;
+        }
+        if (position == 1) {
+            deleteAtBeginning(head);
+            return;
+        }
+        Node* temp = head;
+        for (int i = 1; temp != nullptr && i < position; i++) {
+            temp = temp->next;
+        }
+        if (temp == nullptr) {
+            cout << "Номер позиции превышает количество элементов в списке" << endl;
+            return;
+        }
+        if (temp->next != nullptr) {
+            temp->next->prev = temp->prev;
+        }
+        if (temp->prev != nullptr) {
+            temp->prev->next = temp->next;
+        }
+        delete temp;
+    }
+}; 
+
 // Структура для 2 задачи (связный список)
-struct Node {
-    Node* last1 = nullptr;
-    Node* last2 = nullptr;
-    Node* next1 = nullptr;
-    Node* next2 = nullptr;
-    int new_num = 0;
-    int x = 0, y = 0;
+struct List {
+    Node* new_num;
+    int row, col;
+    int nextRow, nextCol;
+    int prevRow, prevCol;
 };
 
 // Структура для 3 задачи (вектор)
@@ -27,8 +145,8 @@ struct Vector {
 };
 
 int k, n, n1, cn, half;
-Massiv m1[(1 << MAX_K) + 2][(1 << MAX_K) + 2]; 
-vector<vector<Node>> m2;
+Massiv m1[(1 << MAX_K) + 2][(1 << MAX_K) + 2];
+List m[(1 << MAX_K) + 1][(1 << MAX_K) + 1];
 vector<vector<Vector>> m3;
 
 void OneConcat(int a, int b, int c, int d) {
@@ -91,59 +209,71 @@ void One() {
     }
 }
 
-void TwoConcat(Node* a, Node* b) {
-    Node* i1 = a;
-    while (i1->next1 != nullptr && i1->next2 != nullptr) {
-        i1 = i1->next1;
+void TwoConcat(int a1, int a2, int b1, int b2) {
+    int i1 = a1, i2 = a2;
+    while (m[i1][i2].nextRow != n + 1 && m[i1][i2].nextCol != n + 1) {
+        int ni1 = m[i1][i2].nextRow;
+        int ni2 = m[i1][i2].nextCol;
+        i1 = ni1;
+        i2 = ni2;
     }
-    Node* j1 = b;
-    while (j1->next1 != nullptr && j1->next2 != nullptr) {
-        j1 = j1->next1;
+    int j1 = b1, j2 = b2;
+    while (m[j1][j2].nextRow != n + 1 && m[j1][j2].nextCol != n + 1) {
+        int nj1 = m[j1][j2].nextRow;
+        int nj2 = m[j1][j2].nextCol;
+        j1 = nj1;
+        j2 = nj2;
     }
-    while (j1 != nullptr) {
-        Node* nj1 = j1->last1;
-        Node* nj2 = j1->last2;
+    while (j1 != 0) {
+        int nj2 = m[j1][j2].prevCol;
+        int nj1 = m[j1][j2].prevRow;
 
-        i1->next1 = j1;
-        i1->next2 = j1;
-        j1->last1 = i1;
-        j1->last2 = i1;
+        m[i1][i2].nextRow = j1;
+        m[i1][i2].nextCol = j2;
+        m[j1][j2].prevRow = i1;
+        m[j1][j2].prevCol = i2;
 
         i1 = j1;
+        i2 = j2;
         j1 = nj1;
+        j2 = nj2;
     }
-    i1->next1 = nullptr;
-    i1->next2 = nullptr;
+    m[i1][i2].nextRow = n + 1;
+    m[i1][i2].nextCol = n + 1;
 }
 
 void Two() {
-    m2.resize(n + 1, vector<Node>(n + 1));
-    for (int i = 1; i <= n; i++) {
-        for (int j = 1; j <= n; j++) {
-            m2[i][j] = { nullptr, nullptr, nullptr, nullptr, 0, i, j };
+    for (int i = 1; i <= n; ++i)
+        for (int j = 1; j <= n; ++j) {
+            m[i][j].row = i;
+            m[i][j].col = j;
+            m[i][j].new_num = new Node((i - 1) * n + j);
+            m[i][j].nextRow = n + 1;
+            m[i][j].nextCol = n + 1;
+            m[i][j].prevRow = 0;
+            m[i][j].prevCol = 0;
         }
-    }
-    cn = n;
+    int cn = n;
     while (cn > 1) {
         int half = cn / 2;
-        // Сгиб по вертикали
-        for (int i = 1; i <= half; i++) {
-            for (int j = 1; j <= cn; j++) {
-                TwoConcat(&m2[j][i], &m2[j][cn - i + 1]);
-            }
-        }
-        // Сгиб по горизонтали
-        for (int i = 1; i <= half; i++) {
-            for (int j = 1; j <= half; j++) {
-                TwoConcat(&m2[i][j], &m2[cn - i + 1][j]);
-            }
-        }
-        cn = half;
+        // Сгибание по вертикали
+        for (int i = 1; i <= half; ++i)
+            for (int j = 1; j <= cn; ++j)
+                TwoConcat(j, i, j, cn - i + 1);
+        // Сгибание по горизонтали
+        for (int i = 1; i <= half; ++i)
+            for (int j = 1; j <= half; ++j)
+                TwoConcat(i, j, cn - i + 1, j);
+
+        cn /= 2;
     }
-    Node* current = &m2[1][1];
-    for (int i = 1; i <= n1; i++) {
-        current->new_num = i;
-        current = current->next1;
+    int i = 1, j = 1;
+    for (int num = 1; num <= n * n; ++num) {
+        m[i][j].new_num->new_num = num;
+        int ni = m[i][j].nextRow;
+        int nj = m[i][j].nextCol;
+        i = ni;
+        j = nj;
     }
 }
 
@@ -219,6 +349,16 @@ void Print(T m) {
     cout << endl;
 }
 
+void PrintList() {
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            cout << m[i][j].new_num->new_num << "\t";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
 int main() {
     setlocale(LC_ALL, "ru");
     cout << "Введите k (1 <= k <= 6): ";
@@ -231,7 +371,7 @@ int main() {
     QueryPerformanceCounter(&start);
     One();
     QueryPerformanceCounter(&end);
-    double t = ((double)(end.QuadPart - start.QuadPart) / freq.QuadPart)*1000;
+    double t = ((double)(end.QuadPart - start.QuadPart) / freq.QuadPart) * 1000;
     double p = 2.0 * pow(n, 3) / t * pow(10, -6);
     cout << "\nРеализация с помощью массива:" << endl;
     Print(m1);
@@ -245,7 +385,7 @@ int main() {
     t = ((double)(end.QuadPart - start.QuadPart) / freq.QuadPart) * 1000;
     p = 2.0 * pow(n, 3) / t * pow(10, -6);
     cout << "\nРеализация с помощью связного списка:" << endl;
-    Print(m2);
+    PrintList();
     cout << "Время: " << t << " секунд\n";
     cout << "Производительность: " << p << " MFlops" << endl << endl;
 
@@ -260,6 +400,6 @@ int main() {
     cout << "Время: " << t << " секунд\n";
     cout << "Производительность: " << p << " MFlops" << endl << endl;
 
-    cout<<"Выполнила: Мангер Наталья Александровна, группа 090304-РПИа-о24\n";
+    cout << "Выполнила: Мангер Наталья Александровна, группа 090304-РПИа-о24\n";
     return 0;
 }
